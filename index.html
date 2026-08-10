@@ -38,6 +38,29 @@ body{
 }
 .prompt span{color:var(--red);font-family:Arial;margin:0 38px;font-size:26px}
 
+
+.topDonor{
+  margin-top:18px;padding:14px;border:2px solid var(--gold);border-radius:16px;
+  background:linear-gradient(180deg,#120f00,#030303);
+  box-shadow:0 0 18px #5a4500 inset,0 0 12px #6e5300;
+  text-align:center;
+}
+.topDonorTitle{color:var(--gold);font-size:18px;font-weight:1000;letter-spacing:2px;margin-bottom:7px}
+.topDonorName{
+  color:#ffd84a;font-size:clamp(28px,5vw,48px);font-weight:1000;line-height:1.08;
+  text-shadow:0 0 5px #ffdf55,2px 2px 0 #6e5300;overflow-wrap:anywhere;
+}
+.topDonorEmpty{color:#8d7b36;font-size:14px}
+.donorButtons{display:flex;justify-content:center;gap:8px;margin-top:10px}
+.donorButtons button{
+  padding:9px 14px;border-radius:8px;border:1px solid var(--gold);
+  background:#0b0900;color:#ffd84a;font-weight:900;cursor:pointer
+}
+.rosePanel .goldNameAction{
+  grid-column:1/-1;border-color:var(--gold);color:#ffd84a;
+  background:linear-gradient(180deg,#171100,#080600);
+}
+
 .columns{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:24px}
 .panel{border:1px solid;border-radius:16px;padding:13px 14px 15px;background:#020202;min-height:650px}
 .rosePanel{border-color:var(--red);box-shadow:0 0 13px #300008 inset}
@@ -145,6 +168,16 @@ body{
  <div class="prompt"><span>〰</span>Comenta Tu nombre<span>〰</span></div>
 </header>
 
+
+<div class="topDonor">
+  <div class="topDonorTitle">👑 ✦ MEJOR DONADOR ✦ 👑</div>
+  <div id="topDonorName" class="topDonorEmpty">Aún no hay donador destacado</div>
+  <div class="donorButtons">
+    <button onclick="setTopDonor()">👑 COLOCAR NOMBRE</button>
+    <button onclick="clearTopDonor()">× QUITAR</button>
+  </div>
+</div>
+
 <div class="columns">
 <section class="panel rosePanel">
  <div class="panelTitle">✦ 🌹 ROSAS ✦</div>
@@ -193,7 +226,8 @@ body{
 
 <script>
 const KEY='llonethview_exact_panel_v1';
-let data=JSON.parse(localStorage.getItem(KEY)||'{"rosa":[],"tap":[]}');
+let data=JSON.parse(localStorage.getItem(KEY)||'{"rosa":[],"tap":[],"topDonor":""}');
+data.topDonor=data.topDonor||'';
 data.rosa=data.rosa||[];
 data.tap=(data.tap||[]).map(x=>typeof x==='string'?{name:x,icon:'♕'}:x);
 let pendingType='rosa';
@@ -206,7 +240,8 @@ function openAdd(type){
  $('modalTitle').textContent=type==='rosa'?'AGREGAR ROSA':'AGREGAR TAP TAP';
  $('modalInput').value='';
  pendingTapIcon='♕';
- $('tapIconPicker').style.display=type==='tap'?'grid':'none';
+ const picker=$('tapIconPicker');
+ if(picker) picker.style.display=type==='tap'?'grid':'none';
  updateTapIconButtons();
  $('modalBack').style.display='flex';
  setTimeout(()=>$('modalInput').focus(),50);
@@ -218,9 +253,15 @@ function updateTapIconButtons(){
 }
 function closeModal(){$('modalBack').style.display='none'}
 function confirmAdd(){
- const n=$('modalInput').value.trim();
- if(!n)return;
- data[pendingType].push(n);save();closeModal();toast('Nombre agregado');
+  const n=$('modalInput').value.trim();
+  if(!n){ $('modalInput').focus(); return; }
+  if(pendingType==='gold'){
+    data.topDonor=n;
+    save();closeModal();toast('Nombre dorado agregado');return;
+  }
+  if(pendingType==='tap') data.tap.push({name:n,icon:pendingTapIcon||'♕'});
+  else data.rosa.push(n);
+  save();closeModal();toast('Nombre agregado');
 }
 $('modalInput').addEventListener('keydown',e=>{if(e.key==='Enter')confirmAdd();if(e.key==='Escape')closeModal()});
 
@@ -246,6 +287,16 @@ function renderList(type,id,icon){
  });
 }
 function render(){
+  const donor=$('topDonorName');
+  if(donor){
+    if(data.topDonor){
+      donor.className='topDonorName';
+      donor.textContent='👑 ♡ 🌹  '+data.topDonor+'  🌹 ♡ 👑';
+    }else{
+      donor.className='topDonorEmpty';
+      donor.textContent='Aún no hay donador destacado';
+    }
+  }
  renderList('rosa','roseList','🌹');renderList('tap','tapList','♕');
  $('roseTotal').textContent=data.rosa.length;$('tapTotal').textContent=data.tap.length;
  $('roseBadge').textContent=data.rosa.length;$('tapBadge').textContent=data.tap.length;
@@ -262,6 +313,29 @@ function copy(txt){
  if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>toast('Nombres copiados'));
  else alert(txt);
 }
+
+function setTopDonor(){
+  const n=prompt('Escribe el nombre del mejor donador:');
+  if(!n||!n.trim())return;
+  data.topDonor=n.trim();
+  save();
+  toast('Donador destacado');
+}
+function clearTopDonor(){
+  if(!data.topDonor)return;
+  data.topDonor='';
+  save();
+  toast('Donador quitado');
+}
+function openGoldName(){
+  pendingType='gold';
+  $('modalTitle').textContent='NOMBRE DORADO';
+  $('modalInput').value='';
+  $('tapIconPicker').style.display='none';
+  $('modalBack').style.display='flex';
+  setTimeout(()=>$('modalInput').focus(),50);
+}
+
 function settings(){alert('El panel guarda automáticamente los nombres en este dispositivo.')}
 function toast(msg){
  const t=$('toast');t.textContent=msg;t.classList.add('show');
