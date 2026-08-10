@@ -105,7 +105,7 @@ body{
 .modalBack{display:none;position:fixed;inset:0;background:#000b;align-items:center;justify-content:center;padding:20px;z-index:20}
 .modal{width:min(480px,100%);background:#0a0a0a;border:1px solid #444;border-radius:16px;padding:20px}
 .modal h3{margin-top:0}.modal input{width:100%;padding:13px;border-radius:9px;border:1px solid #444;background:#000;color:#fff;font-size:16px}
-.modalBtns{display:flex;gap:8px;margin-top:12px}.modalBtns button{flex:1;padding:12px;border-radius:9px;border:1px solid #444;background:#191919;color:#fff;font-weight:900}
+.tapIconPicker{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}.tapIconChoice{padding:10px 8px;border-radius:9px;border:1px solid #555;background:#151515;color:#fff;font-weight:900;cursor:pointer}.tapIconChoice.selected{border-color:var(--gold);color:var(--gold);box-shadow:0 0 7px #6e5300}.modalBtns{display:flex;gap:8px;margin-top:12px}.modalBtns button{flex:1;padding:12px;border-radius:9px;border:1px solid #444;background:#191919;color:#fff;font-weight:900}
 .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:#fff;color:#000;border-radius:30px;padding:11px 18px;font-weight:900;opacity:0;transition:.2s;z-index:30}.toast.show{opacity:1;transform:translate(-50%,0)}
 
 @media(max-width:850px){
@@ -194,7 +194,10 @@ body{
 <script>
 const KEY='llonethview_exact_panel_v1';
 let data=JSON.parse(localStorage.getItem(KEY)||'{"rosa":[],"tap":[]}');
+data.rosa=data.rosa||[];
+data.tap=(data.tap||[]).map(x=>typeof x==='string'?{name:x,icon:'♕'}:x);
 let pendingType='rosa';
+let pendingTapIcon='♕';
 const $=id=>document.getElementById(id);
 
 function save(){localStorage.setItem(KEY,JSON.stringify(data));render()}
@@ -202,8 +205,16 @@ function openAdd(type){
  pendingType=type;
  $('modalTitle').textContent=type==='rosa'?'AGREGAR ROSA':'AGREGAR TAP TAP';
  $('modalInput').value='';
+ pendingTapIcon='♕';
+ $('tapIconPicker').style.display=type==='tap'?'grid':'none';
+ updateTapIconButtons();
  $('modalBack').style.display='flex';
  setTimeout(()=>$('modalInput').focus(),50);
+}
+function chooseTapIcon(icon){pendingTapIcon=icon;updateTapIconButtons()}
+function updateTapIconButtons(){
+ $('tapHeartBtn').classList.toggle('selected',pendingTapIcon==='♡');
+ $('tapCrownBtn').classList.toggle('selected',pendingTapIcon==='♕');
 }
 function closeModal(){$('modalBack').style.display='none'}
 function confirmAdd(){
@@ -224,10 +235,12 @@ function renderList(type,id,icon){
  if(!data[type].length){
   el.innerHTML='<div class="empty">Los nombres aparecerán aquí</div>';return;
  }
- data[type].forEach((n,i)=>{
+ data[type].forEach((item,i)=>{
   const c=document.createElement('div');c.className='card';
-  const ic=document.createElement('span');ic.className='cardIcon';ic.textContent=icon;
-  const name=document.createElement('span');name.className='name';name.textContent=n;
+  const itemIcon=type==='tap'?(item.icon||'♕'):icon;
+  const itemName=type==='tap'?(item.name||''):item;
+  const ic=document.createElement('span');ic.className='cardIcon';ic.textContent=itemIcon;
+  const name=document.createElement('span');name.className='name';name.textContent=itemName;
   const x=document.createElement('button');x.className='remove';x.textContent='×';x.onclick=()=>remove(type,i);
   c.append(ic,name,x);el.appendChild(c);
  });
